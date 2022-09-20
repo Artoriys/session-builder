@@ -86,7 +86,7 @@ object SessionSparkJob extends SparkDriver {
           .isAfter(currentDate.minusDays(jobContext.lookupDays)))
   }
 
-  def writeData(df: DataFrame, test: Boolean = true) = {
+  def writeData(df: DataFrame, test: Boolean = true): Unit = {
     import df.sparkSession.implicits._
     if (test) {
       df.orderBy($"user_id".asc, $"product_code".desc, $"timestamp".asc).show(truncate = false)

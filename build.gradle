@@ -1,0 +1,71 @@
+//buildscript {
+//    repositories {
+//        gradlePluginPortal()
+//    }
+//    dependencies {
+//        classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:6.1.0'
+//    }
+//}
+
+
+plugins {
+    id 'java'
+    id 'scala'
+    id 'idea'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+}
+
+group 'org.session.app'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        scala {
+            srcDirs = ['src/main/scala']
+        }
+    }
+    test {
+        scala {
+            srcDirs = ['src/test/scala']
+        }
+    }
+}
+
+tasks.withType(ScalaCompile).configureEach {
+    scalaCompileOptions.additionalParameters = ["-Ypartial-unification", "-Ydelambdafy:inline"]
+}
+tasks.withType(ScalaCompile).configureEach {
+    targetCompatibility = "1.8"
+}
+
+shadowJar {
+    relocate 'shapeless', 'shaded.shapeless'
+    relocate 'com.google.common', 'shaded.com.google.common'
+    relocate 'com.google.protobuf', 'shaded.com.google.protobuf'
+    relocate 'io.netty', 'shaded.io.netty'
+}
+
+dependencies {
+    compileOnly 'org.scala-lang:scala-library:2.12.12'
+    implementation group: 'com.github.pureconfig', name: 'pureconfig_2.12', version: '0.17.1'
+
+    //implementation for test purpose, do not use in production
+    implementation(group: 'org.apache.spark', name: 'spark-sql_2.12', version: '3.2.0')
+    //compileOnly(group: 'org.apache.spark', name: 'spark-sql_2.12', version: '3.2.0')
+
+
+    testImplementation(group: "junit", name: "junit", version: "4.13")
+    testImplementation(group: 'org.apache.spark', name: 'spark-sql_2.12', version: '3.2.0')
+}
+
+test {
+    useJUnitPlatform()
+}

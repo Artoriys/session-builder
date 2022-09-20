@@ -1,7 +1,7 @@
 package org.session.app
 
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{lag, to_timestamp, typedlit, unix_timestamp}
+import org.apache.spark.sql.functions.{lag, to_date, to_timestamp, typedlit, unix_timestamp}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.session.app.config.JobContext
 import org.session.app.model.input.Event
@@ -19,7 +19,7 @@ object SessionSparkJob extends SparkDriver {
 
     val snapshot = readSnapshotData(jobContext, spark)
 
-    val union = snapshot
+    val united = snapshot
       .drop($"session_id")
       .drop($"start_date")
       .as[Event]
@@ -34,7 +34,7 @@ object SessionSparkJob extends SparkDriver {
 
     import org.session.app.utils.OptionUtils._
 
-    val out = union
+    val out = united
       .withColumn("unix_timestamp", unix_timestamp($"timestamp"))
       .withColumn("time_lag", $"unix_timestamp" - lag($"unix_timestamp", 1).over(window))
       .drop("unix_timestamp")
@@ -59,8 +59,11 @@ object SessionSparkJob extends SparkDriver {
               event
           }
       }
+      .drop($"time_lag")
+      .withColumn("start_date", to_date($"timestamp"))
+      .as[OutputEvent]
 
-    writeData(out.toDF())
+    writeData(out)
   }
 
   def readIncrementalData(jobContext: JobContext, spark: SparkSession): Dataset[Event] = {
@@ -86,7 +89,7 @@ object SessionSparkJob extends SparkDriver {
           .isAfter(currentDate.minusDays(jobContext.lookupDays)))
   }
 
-  def writeData(df: DataFrame, test: Boolean = true): Unit = {
+  def writeData(df: Dataset[OutputEvent], test: Boolean = true): Unit = {
     import df.sparkSession.implicits._
     if (test) {
       df.orderBy($"user_id".asc, $"product_code".desc, $"timestamp".asc).show(truncate = false)

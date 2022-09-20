@@ -7,6 +7,6 @@ case class Interim(
                     event_id: String,
                     timestamp: Timestamp,
                     product_code: String,
-                    time_lag: Long,
+                    time_lag: Option[Long],
                     session_id: Option[String]
                   )

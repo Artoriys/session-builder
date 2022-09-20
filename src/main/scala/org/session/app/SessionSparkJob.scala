@@ -28,16 +28,17 @@ object SessionSparkJob extends SparkDriver {
     val window = Window
       .partitionBy($"user_id", $"product_code")
       .orderBy(
-        $"timestamp".asc
+        $"timestamp".asc,
+        $"event_id".asc
       )
 
+    import org.session.app.utils.OptionUtils._
 
     val out = union
       .withColumn("unix_timestamp", unix_timestamp($"timestamp"))
       .withColumn("time_lag", $"unix_timestamp" - lag($"unix_timestamp", 1).over(window))
       .drop("unix_timestamp")
       .withColumn("session_id", typedlit(Option.empty[String]))
-      .na.fill(0, Seq("time_lag"))
       .as[Interim]
       .groupByKey(v => (v.user_id, v.product_code))
       .flatMapGroups {
@@ -45,7 +46,7 @@ object SessionSparkJob extends SparkDriver {
           var lastSession = Option.empty[String]
           events.map {
             //Detect start of the session
-            case event if (event.time_lag == 0 || event.time_lag > jobContext.sessionBrakeTimeSec) &&
+            case event if (event.time_lag.isEmpty || event.time_lag > jobContext.sessionBrakeTimeSec) &&
               jobContext.userEvents.contains(event.event_id) =>
               lastSession = Some(s"${event.user_id}#${event.product_code}#${event.timestamp}")
               event.copy(session_id = lastSession)

@@ -5,7 +5,8 @@ import pureconfig.ConfigSource
 case class JobContext(
                      readDate: String,
                      readPath: String,
-                     lookbackTimeSec: Int,
+                     sessionBrakeTimeSec: Int,
+                     lookupDays: Int = 5,
                      timestampFormat: String,
                      userEvents: Seq[String] = Seq("a", "b", "c")
                      )

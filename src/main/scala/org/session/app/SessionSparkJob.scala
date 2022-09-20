@@ -21,6 +21,7 @@ object SessionSparkJob extends SparkDriver {
 
     val union = snapshot
       .drop($"session_id")
+      .drop($"start_date")
       .as[Event]
       .union(inc)
 
@@ -41,20 +42,19 @@ object SessionSparkJob extends SparkDriver {
       .groupByKey(v => (v.user_id, v.product_code))
       .flatMapGroups {
         case (_, events) =>
-          var last_session = Option.empty[String]
+          var lastSession = Option.empty[String]
           events.map {
-                //Detect start of the session
-            case event if (event.time_lag == 0 ||
-              event.time_lag > jobContext.lookbackTimeSec) &&
+            //Detect start of the session
+            case event if (event.time_lag == 0 || event.time_lag > jobContext.sessionBrakeTimeSec) &&
               jobContext.userEvents.contains(event.event_id) =>
-              last_session = Some(s"${event.user_id}#${event.product_code}#${event.timestamp}")
-              event.copy(session_id = last_session)
-              //Continue session
-            case event if event.time_lag <= jobContext.lookbackTimeSec =>
-              event.copy(session_id = last_session)
-              //Not a session start
+              lastSession = Some(s"${event.user_id}#${event.product_code}#${event.timestamp}")
+              event.copy(session_id = lastSession)
+            //Continue session
+            case event if event.time_lag <= jobContext.sessionBrakeTimeSec =>
+              event.copy(session_id = lastSession)
+            //Not a session start and not a continue
             case event =>
-              last_session = Option.empty[String]
+              lastSession = Option.empty[String]
               event
           }
       }
@@ -73,16 +73,24 @@ object SessionSparkJob extends SparkDriver {
       .as[Event]
   }
 
+
   def readSnapshotData(jobContext: JobContext, spark: SparkSession) = {
     val currentDate = LocalDate.parse(jobContext.readDate)
     import spark.implicits._
 
     spark.emptyDataset[OutputEvent]
-      .filter(_.timestamp.toLocalDateTime.toLocalDate.isAfter(currentDate.minusDays(5)))
+      .filter(
+        _.start_date
+          .toLocalDate
+          .isAfter(currentDate.minusDays(jobContext.lookupDays)))
   }
 
-  def writeData(df: DataFrame) = {
+  def writeData(df: DataFrame, test: Boolean = true) = {
     import df.sparkSession.implicits._
-    df.orderBy($"user_id".asc, $"product_code".desc, $"timestamp".asc).show(truncate = false)
+    if (test) {
+      df.orderBy($"user_id".asc, $"product_code".desc, $"timestamp".asc).show(truncate = false)
+    } else {
+      df.writeTo("session").overwritePartitions()
+    }
   }
 }

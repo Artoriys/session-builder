@@ -7,5 +7,6 @@ case class OutputEvent(
                         event_id: String,
                         timestamp: Timestamp,
                         product_code: String,
-                        session_id: String
+                        session_id: String,
+                        start_date: java.sql.Date
                       )

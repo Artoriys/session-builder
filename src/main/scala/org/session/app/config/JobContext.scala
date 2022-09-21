@@ -2,13 +2,15 @@ package org.session.app.config
 
 import pureconfig.ConfigSource
 
+import java.time.LocalDate
+
 case class JobContext(
-                     readDate: String,
-                     readPath: String,
-                     sessionBrakeTimeSec: Int,
-                     lookupDays: Int = 5,
-                     timestampFormat: String,
-                     userEvents: Seq[String] = Seq("a", "b", "c")
+                       readDate: String = LocalDate.now().toString,
+                       readPath: String,
+                       sessionBrakeTimeSec: Int,
+                       lookupDays: Int = 5,
+                       timestampFormat: String,
+                       userEvents: Seq[String] = Seq("a", "b", "c")
                      )
 
 object JobContext {

@@ -2,7 +2,7 @@ package org.session.app.model.interim
 
 import java.sql.Timestamp
 
-case class Interim(
+case class InterimEvent(
                     user_id: String,
                     event_id: String,
                     timestamp: Timestamp,

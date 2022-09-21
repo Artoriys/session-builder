@@ -17,3 +17,9 @@ data from intermediate table older when 5 days, append it to history table and d
 table. Appending and deleting should be done in one transaction. Deleting is not supported by default Spark, 
 so we can use Apache Iceberg https://iceberg.apache.org/docs/latest/spark-writes/#delete-from or Delta Lake 
 https://docs.delta.io/latest/delta-update.html#delete-from-a-table.
+
+
+#### Things to improve
+
+1. Move `time_lag` column calculation to `flatMapGroups` to get rid of the second shuffle
+2. Add more configuration options (for example read a bunch of days)

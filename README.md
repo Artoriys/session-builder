@@ -23,3 +23,4 @@ https://docs.delta.io/latest/delta-update.html#delete-from-a-table.
 
 1. Move `time_lag` column calculation to `flatMapGroups` to get rid of the second shuffle
 2. Add more configuration options (for example read a bunch of days)
+3. Add environment specific configs
